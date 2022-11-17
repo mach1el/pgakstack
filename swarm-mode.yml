@@ -81,7 +81,7 @@ services:
       restart_policy:
         condition: on-failure
       labels:
-        - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
+        - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.prometheus.service=prometheus"
         - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
         - "traefik.docker.network=inbound"
@@ -103,7 +103,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     deploy:
       labels:
-        - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+        - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.grafana.service=grafana"
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"
         - "traefik.docker.network=inbound"
@@ -126,7 +126,7 @@ services:
       - '--storage.path=/alertmanager'
     deploy:
       labels:
-        - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.localhost`)"
+        - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN:-localhost}`)"
         - "traefik.http.routers.alertmanager.service=alertmanager"
         - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
         - "traefik.docker.network=inbound"
