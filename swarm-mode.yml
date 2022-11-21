@@ -62,7 +62,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - ./conf/prometheus:/etc/prometheus
+      - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -91,8 +91,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - grafana_data:/var/lib/grafana
-      - ./conf/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./conf/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
     environment:
       - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-grafana}
@@ -116,9 +116,9 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - ./conf/alertmanager:/etc/alertmanager
+      - ./alertmanager:/etc/alertmanager
     command:
-      - '--config.file=/etc/alertmanager/config.yml'
+      - '--config.file=/etc/alertmanagerig.yml'
       - '--storage.path=/alertmanager'
     deploy:
       labels:
