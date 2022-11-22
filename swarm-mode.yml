@@ -118,7 +118,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - ./alertmanager:/etc/alertmanager
     command:
-      - '--config.file=/etc/alertmanagerig.yml'
+      - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
     deploy:
       labels:
@@ -130,3 +130,19 @@ services:
         constraints: [node.role == manager]
       restart_policy:
         condition: on-failure
+
+  karma:
+    image: lmierzwa/karma:latest
+    networks:
+      - inbound
+    environment:
+      - "PORT=8989"
+      - "ALERTMANAGER_URI=http://alertmanager:9093"
+    deploy:
+      labels:
+        - "traefik.http.routers.karma.rule=Host(`karma.${DOMAIN:-localhost}`)"
+        - "traefik.http.routers.karma.service=karma"
+        - "traefik.http.services.karma.loadbalancer.server.port=8989"
+        - "traefik.docker.network=inbound"
+      mode: replicated
+      replicas: 1
