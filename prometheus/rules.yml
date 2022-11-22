@@ -2,66 +2,67 @@ groups:
 - name: node_exporter_alerts
   rules:
   - alert: Node down
-    expr: up{job="monitoring-pi"} == 0
-    for: 1m
+    expr: up == 0
+    for: 30s
     labels:
-      severity: warning
+      severity: critical
     annotations:
-      title: Node {{ $labels.instance }} is down
+      title: Instance {{ $labels.instance }} is down
       description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than a minute. Node seems down.
 
-
-  - alert: HostOutOfMemory
+  - alert: Node out of memory
     expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
     for: 2m
     labels:
       severity: warning
     annotations:
-      summary: Host out of memory (instance {{ $labels.instance }})
-      description: Node memory is filling up (< 10% left) | VALUE = {{ $value }}
+      summary: Instance {{ $labels.instance }} out of memory
+      description: Node memory is filling up (< 10% left) | VALUE = {{ humanize
+        $value}}%
 
-  - alert: HostMemoryUnderMemoryPressure
+  - alert: Node memory under pressure
     expr: rate(node_vmstat_pgmajfault[1m]) > 1000
     for: 2m
     labels:
       severity: warning
     annotations:
-      summary: Host memory under memory pressure (instance {{ $labels.instance }})
-      description: The node is under heavy memory pressure. High rate of major page faults | VALUE = {{ $value }}
+      summary: Instance {{ $labels.instance }} memory under memory pressure
+      description: Node is under heavy memory pressure. High rate of major page faults | VALUE = {{ humanize
+        $value}}%
 
-  - alert: HostOutOfDiskSpace
+  - alert: Node out of disk space
     expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
     for: 2m
     labels:
-      severity: warning
+      severity: critical
     annotations:
-      summary: Host out of disk space (instance {{ $labels.instance }})
-      description: Disk is almost full (< 10% left) | VALUE = {{ $value }}
+      summary: Instance {{ $labels.instance }} out of disk space
+      description: Disk is almost full (< 10% left) | VALUE {{ $value }}
 
-  - alert: HostDiskWillFillIn24Hours
+  - alert: Node disk will reach full in 24 hours
     expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
     for: 2m
     labels:
-      severity: warning
+      severity: critical
     annotations:
-      summary: Host disk will fill in 24 hours (instance {{ $labels.instance }})
+      summary: Instance {{ $labels.instance }} disk will fill in 24 hours
       description: Filesystem is predicted to run out of space within the next 24 hours at current write rate | VALUE = {{ $value }}
 
-
-  - alert: HostHighCpuLoad
+  - alert: Node high CPU load
     expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
-    for: 0m
+    for: 30s
     labels:
       severity: warning
     annotations:
-      summary: Host high CPU load (instance {{ $labels.instance }})
-      description: CPU load is > 80% | VALUE = {{ $value }}
+      summary: Instance {{ $labels.instance }} getting high CPU load 
+      description: Node CPU loading as {{ humanize
+        $value}}%
 
-  - alert: HostSystemdServiceCrashed
+  - alert: Node systemd service crashed
     expr: node_systemd_unit_state{state="failed"} == 1
-    for: 0m
+    for: 1m
     labels:
       severity: warning
     annotations:
-      summary: Host SystemD service crashed (instance {{ $labels.instance }})
+      summary: Instance {{ $labels.instance }} getting SystemD service crashed
       description: SystemD service crashed | VALUE = {{ $value }}
