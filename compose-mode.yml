@@ -118,3 +118,4 @@ services:
       - "traefik.http.routers.karma.service=karma"
       - "traefik.http.services.karma.loadbalancer.server.port=8989"
       - "traefik.docker.network=inbound"
+    <<: *restart_policy
