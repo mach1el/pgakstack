@@ -1,7 +1,7 @@
-# PGAstack
+# PGAKstack
 
-Monitoring your nodes with [Prometheus](prometheus.io) + [Grafana](grafana.org) + [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) Stack.<br>
-Using [Slack](https://slack.com/) to get alerts to keep tracking your system.
+Monitoring your nodes with [Prometheus](prometheus.io) + [Grafana](grafana.org) + [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) + [Karma](https://karma-dashboard.io/) Stack.<br>
+Push alerts to [Slack](https://slack.com/) to keep tracking your system.
 
 ## Docker-compose
 
