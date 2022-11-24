@@ -1,18 +1,37 @@
 groups:
-- name: node_exporter_alerts
+- name: blackbox_exporter_alerts
   rules:
-  - alert: Node down
-    expr: up == 0
+  - alert: Blackbox probe failed
+    expr: probe_success{job="blackbox_exporter"} == 0
     for: 30s
     labels:
       severity: critical
     annotations:
-      title: Instance {{ $labels.instance }} is down
+      summary: Instance {{ $labels.instance }} blackbox job failed
+      description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than a minute.
+  
+  - alert: Blackbox probe HTTP failure
+    expr: 'probe_http_status_code <= 199 OR probe_http_status_code >= 400'
+    labels:
+      severity: critical
+    annotations:
+      summary: Instance {{ $labels.instance }} HTTP getting error status 
+      description: Node HTTP status on {{ $labels.instance }} is not 200-399 | VALUE = {{ $value }}
+
+- name: node_exporter_alerts
+  rules:
+  - alert: Node down
+    expr: up{job="node_exporter"} == 0
+    for: 30s
+    labels:
+      severity: critical
+    annotations:
+      summary: Instance {{ $labels.instance }} is down
       description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than a minute. Node seems down.
 
   - alert: Node out of memory
     expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
-    for: 2m
+    for: 30s
     labels:
       severity: warning
     annotations:
@@ -58,6 +77,24 @@ groups:
       description: Node CPU loading as {{ humanize
         $value}}%
 
+  - alert: Host Network Receive Errors
+    expr: rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Instance {{ $labels.instance }} network receive errors
+      description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last two minutes.'
+
+  - alert: Host Network Transmit Errors
+    expr: rate(node_network_transmit_errs_total[2m]) / rate(node_network_transmit_packets_total[2m]) > 0.01
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Instance {{ $labels.instance }} network transmit errors
+      description: 'Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last two minutes.'
+
   - alert: Node systemd service crashed
     expr: node_systemd_unit_state{state="failed"} == 1
     for: 1m
@@ -65,4 +102,4 @@ groups:
       severity: warning
     annotations:
       summary: Instance {{ $labels.instance }} getting SystemD service crashed
-      description: SystemD service crashed | VALUE = {{ $value }}
+      description: SystemD service crashed
