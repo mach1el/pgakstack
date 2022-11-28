@@ -5,6 +5,7 @@ networks:
     driver: bridge
 
 volumes:
+  certs: {}
   prometheus_data: {}
   grafana_data: {}
 
@@ -15,22 +16,29 @@ x-op-restart-policy: &restart_policy
 services:
   traefik:
     hostname: traefik
-    image: traefik:v2.2
+    image: traefik:latest
     container_name: traefik
     networks:
       - pgastack
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/tls.yml:/etc/traefik/tls.yml:ro
+      - certs:/etc/ssl/traefik:ro
     labels:
-      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)"
-      - "traefik.http.routers.traefik.service=traefik"
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-      - "traefik.docker.network=pgastack"
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.${DOMAIN:-traefik.me}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+      - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     command:
       - "--api"
       - "--log.level=DEBUG"
@@ -39,7 +47,10 @@ services:
       - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
       - "--providers.docker=true"
       - "--providers.docker.watch"
+      - "--providers.file.filename=/etc/traefik/tls.yml"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
     <<: *restart_policy
   
@@ -53,10 +64,15 @@ services:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
     labels:
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN:-localhost}`)"
+      - "traefik.enable=true"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.prometheus.service=prometheus"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-      - "traefik.docker.network=pgastack"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN:-traefik.me}`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.middlewares=prometheus-auth"
+      - "traefik.http.middlewares.prometheus-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -81,10 +97,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-grafana}
       - GF_USERS_ALLOW_SIGN_UP=false
     labels:
-      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-localhost}`)"
+      - "traefik.enable=true"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.grafana.service=grafana"
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      - "traefik.docker.network=pgastack"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-traefik.me}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.middlewares=grafana-auth"
+      - "traefik.http.middlewares.grafana-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     <<: *restart_policy
 
   alertmanager:
@@ -99,10 +120,15 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
     labels:
-      - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN:-localhost}`)"
+      - "traefik.enable=true"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.alertmanager.service=alertmanager"
       - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
-      - "traefik.docker.network=pgastack"
+      - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN:-traefik.me}`)"
+      - "traefik.http.routers.alertmanager.entrypoints=websecure"
+      - "traefik.http.routers.alertmanager.tls=true"
+      - "traefik.http.routers.alertmanager.middlewares=alertmanager-auth"
+      - "traefik.http.middlewares.alertmanager-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     <<: *restart_policy
 
   karma:
@@ -114,8 +140,21 @@ services:
       - "PORT=8989"
       - "ALERTMANAGER_URI=http://alertmanager:9093"
     labels:
-      - "traefik.http.routers.karma.rule=Host(`karma.${DOMAIN:-localhost}`)"
+      - "traefik.enable=true"
+      - "traefik.docker.network=inbound"
       - "traefik.http.routers.karma.service=karma"
       - "traefik.http.services.karma.loadbalancer.server.port=8989"
-      - "traefik.docker.network=inbound"
+      - "traefik.http.routers.karma.rule=Host(`karma.${DOMAIN:-traefik.me}`)"
+      - "traefik.http.routers.karma.entrypoints=websecure"
+      - "traefik.http.routers.karma.tls=true"
+      - "traefik.http.routers.karma.middlewares=karma-auth"
+      - "traefik.http.middlewares.karma-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     <<: *restart_policy
+
+  certs:
+    image: alpine
+    volumes:
+      - certs:/etc/ssl/traefik
+    command: sh -c "cd /etc/ssl/traefik
+      && wget traefik.me/cert.pem -O cert.pem
+      && wget traefik.me/privkey.pem -O privkey.pem"
