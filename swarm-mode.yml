@@ -187,6 +187,32 @@ services:
         - "traefik.http.routers.karma.tls=true"
         - "traefik.http.routers.karma.middlewares=karma-auth"
         - "traefik.http.middlewares.karma-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
+  
+  node-exporter:
+    image: prom/node-exporter:latest
+    networks:
+      - inbound
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /etc/hostname:/etc/nodename
+    environment:
+      - NODE_ID={{.Node.ID}}
+
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--no-collector.ipvs'
+    deploy:
+      mode: global
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
   certs:
     image: alpine
