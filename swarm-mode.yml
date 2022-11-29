@@ -17,6 +17,7 @@ networks:
 volumes:
   certs: {}
   prometheus_data: {}
+  alertmanager: {}
   grafana_data: {}
 
 services:
@@ -146,6 +147,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - ./alertmanager:/etc/alertmanager
+      - alertmanager:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
