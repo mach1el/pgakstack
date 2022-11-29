@@ -4,6 +4,10 @@ global:
 
 route:
   receiver: 'slack'
+  group_by: ['instance']
+  group_wait: 1s
+  group_interval: 3s
+  repeat_interval: 1h
 
 receivers:
   - name: 'slack'
