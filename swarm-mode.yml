@@ -135,8 +135,6 @@ services:
         - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-traefik.me}`)"
         - "traefik.http.routers.grafana.entrypoints=websecure"
         - "traefik.http.routers.grafana.tls=true"
-        - "traefik.http.routers.grafana.middlewares=grafana-auth"
-        - "traefik.http.middlewares.grafana-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
 
   alertmanager:
     hostname: alertmanager
