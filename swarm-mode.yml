@@ -145,6 +145,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - ./alertmanager:/etc/alertmanager
+      - ./alertmanager/alerts.tmpl:/etc/alertmanager/config/alerts.tmpl
       - alertmanager:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
