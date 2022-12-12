@@ -72,7 +72,7 @@ services:
       - "traefik.http.routers.prometheus.entrypoints=websecure"
       - "traefik.http.routers.prometheus.tls=true"
       - "traefik.http.routers.prometheus.middlewares=prometheus-auth"
-      - "traefik.http.middlewares.prometheus-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
+      - "traefik.http.middlewares.prometheus-auth.basicauth.users=${PROM_AUTH_USER?Variable is not set}:${PROM_AUTH_PASSWD?Variable is not set}"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -104,8 +104,6 @@ services:
       - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-traefik.me}`)"
       - "traefik.http.routers.grafana.entrypoints=websecure"
       - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.routers.grafana.middlewares=grafana-auth"
-      - "traefik.http.middlewares.grafana-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
     <<: *restart_policy
 
   alertmanager:
@@ -128,7 +126,7 @@ services:
       - "traefik.http.routers.alertmanager.entrypoints=websecure"
       - "traefik.http.routers.alertmanager.tls=true"
       - "traefik.http.routers.alertmanager.middlewares=alertmanager-auth"
-      - "traefik.http.middlewares.alertmanager-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
+      - "traefik.http.middlewares.alertmanager-auth.basicauth.users=${AM_AUTH_USER?Variable is not set}:${AM_AUTH_PASSWD?Variable is not set}"
     <<: *restart_policy
 
   karma:
@@ -148,7 +146,7 @@ services:
       - "traefik.http.routers.karma.entrypoints=websecure"
       - "traefik.http.routers.karma.tls=true"
       - "traefik.http.routers.karma.middlewares=karma-auth"
-      - "traefik.http.middlewares.karma-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
+      - "traefik.http.middlewares.karma-auth.basicauth.users=${KARMA_AUTH_USER?Variable is not set}:${KARMA_AUTH_PASSWD?Variable is not set}"
     <<: *restart_policy
 
   certs:
