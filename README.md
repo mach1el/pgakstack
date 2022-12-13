@@ -13,7 +13,8 @@ docker-compose up -d
 ## Docker swarm
 
 ```
-docker stack deploy -c swarm-mode.yml pgakstack
+docker stack deploy -c swarm-traefik.yml reverse_proxy
+docker stack deploy -c swarm-monitor.yml pgak
 ```
 
 ## Variables
