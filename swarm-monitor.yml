@@ -2,83 +2,19 @@ version: '3.7'
 
 networks:
   traefik:
-    driver: overlay
-    name: traefik
-    ipam:
-      config:
-        - subnet: "10.95.1.0/24"
-  inbound:
-    driver: overlay
-    name: inbound
-    ipam:
-      config:
-        - subnet: "10.95.2.0/24"
+    external: true
 
 volumes:
-  certs: {}
   prometheus_data: {}
   alertmanager: {}
   grafana_data: {}
 
 services:
-  traefik:
-    hostname: traefik
-    image: traefik:latest
-    networks:
-      - traefik
-      - inbound
-    ports:
-      - target: 80
-        published: 80
-        mode: host
-      - target: 443
-        published: 443
-        mode: host
-      - target: 8080
-        published: 8080
-        protocol: tcp
-        mode: ingress
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik/tls.yml:/etc/traefik/tls.yml:ro
-      - certs:/etc/ssl/traefik:ro
-    command:
-      - "--api"
-      - "--log.level=DEBUG"
-      - "--api.insecure=true"
-      - "--metrics.prometheus=true"
-      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
-      - "--providers.docker=true"
-      - "--providers.docker.watch"
-      - "--providers.docker.swarmmode=true"
-      - "--providers.file.filename=/etc/traefik/tls.yml"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-    deploy:
-      replicas: 1
-      placement:
-        constraints: [node.role == manager]
-      restart_policy:
-        condition: on-failure
-      labels:
-        - "traefik.enable=true"
-        - "traefik.docker.network=traefik"
-        - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
-        - "traefik.http.routers.dashboard.rule=Host(`dashboard.${DOMAIN:-traefik.me}`)"
-        - "traefik.http.routers.dashboard.entrypoints=websecure"
-        - "traefik.http.routers.dashboard.tls=true"
-        - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
-        - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_USER?Variable is not set}:${TRAEFIK_PASSWD?Variable is not set}"
-
   prometheus:
     hostname: prometheus
     image: prom/prometheus:latest
     networks:
-      - inbound
+      - traefik
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -98,7 +34,7 @@ services:
         condition: on-failure
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=inbound"
+        - "traefik.docker.network=traefik"
         - "traefik.http.routers.prometheus.service=prometheus"
         - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
         - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN:-traefik.me}`)"
@@ -111,7 +47,7 @@ services:
     hostname: grafana
     image: grafana/grafana:9.1.1
     networks:
-      - inbound
+      - traefik
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -129,7 +65,7 @@ services:
         condition: on-failure
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=inbound"
+        - "traefik.docker.network=traefik"
         - "traefik.http.routers.grafana.service=grafana"
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"
         - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-traefik.me}`)"
@@ -140,7 +76,7 @@ services:
     hostname: alertmanager
     image: prom/alertmanager:latest
     networks:
-      - inbound
+      - traefik
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -157,7 +93,7 @@ services:
         condition: on-failure
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=inbound"
+        - "traefik.docker.network=traefik"
         - "traefik.http.routers.alertmanager.service=alertmanager"
         - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
         - "traefik.http.routers.alertmanager.rule=Host(`alertmanager.${DOMAIN:-traefik.me}`)"
@@ -169,7 +105,7 @@ services:
   karma:
     image: lmierzwa/karma:latest
     networks:
-      - inbound
+      - traefik
     environment:
       - "PORT=8989"
       - "ALERTMANAGER_URI=http://alertmanager:9093"
@@ -178,7 +114,7 @@ services:
       replicas: 1
       labels:
         - "traefik.enable=true"
-        - "traefik.docker.network=inbound"
+        - "traefik.docker.network=traefik"
         - "traefik.http.routers.karma.service=karma"
         - "traefik.http.services.karma.loadbalancer.server.port=8989"
         - "traefik.http.routers.karma.rule=Host(`karma.${DOMAIN:-traefik.me}`)"
@@ -190,7 +126,7 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     networks:
-      - inbound
+      - traefik
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -212,14 +148,3 @@ services:
           memory: 128M
         reservations:
           memory: 64M
-
-  certs:
-    image: alpine
-    volumes:
-      - certs:/etc/ssl/traefik
-    command: sh -c "cd /etc/ssl/traefik
-      && wget traefik.me/cert.pem -O cert.pem
-      && wget traefik.me/privkey.pem -O privkey.pem"
-    deploy:
-      placement:
-        constraints: [node.role == manager]
